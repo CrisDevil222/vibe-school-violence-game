@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vibe Challenge — Cân bằng cuộc sống</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at center, #000, #111);
+      color: white;
+      text-align: center;
+      overflow: hidden;
+    }
+    h1 {
+      margin-top: 20px;
+      text-shadow: 0 0 15px #0ff;
+    }
+    #gameCanvas {
+      display: block;
+      margin: 20px auto;
+      background: #222;
+      border: 3px solid #555;
+      box-shadow: 0 0 30px #000;
+      transition: opacity 1s ease;
+    }
+    #info {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    #restart {
+      display: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      margin-top: 15px;
+      background: #0a84ff;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #restart:hover {
+      background: #0073e6;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌸 Vibe Challenge — Cân bằng trong xã hội hiện đại 🌸</h1>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <div id="info">Điểm: <span id="score">0</span> | Màn: <span id="level">1</span></div>
+  <button id="restart">Chơi lại</button>
+
+  <!-- 🎵 Âm thanh -->
+  <audio id="bgMusic" loop>
+    <source src="https://cdn.pixabay.com/audio/2023/03/16/audio_6dd4d4c3cc.mp3" type="audio/mp3">
+  </audio>
+  <audio id="collectSound">
+    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_c1a89b8cda.mp3" type="audio/mp3">
+  </audio>
+  <audio id="gameOverSound">
+    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_2f7f14c857.mp3" type="audio/mp3">
+  </audio>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const levelEl = document.getElementById("level");
+    const restartBtn = document.getElementById("restart");
+
+    // Âm thanh
+    const bgMusic = document.getElementById("bgMusic");
+    const collectSound = document.getElementById("collectSound");
+    const gameOverSound = document.getElementById("gameOverSound");
+
+    // --- Player setup ---
+    const player = { x: 50, y: 350, size: 30, speed: 5, color: "#0f0", dx: 0, dy: 0 };
+
+    // --- Items setup ---
+    let stressItems = [];
+    let positiveItems = [];
+    let score = 0;
+    let level = 1;
+    let gameActive = true;
+    let fadeOpacity = 1;
+
+    function createItems() {
+      stressItems = [];
+      positiveItems = [];
+      for (let i = 0; i < 4 + level; i++) {
+        stressItems.push({
+          x: Math.random() * (canvas.width - 30),
+          y: Math.random() * (canvas.height - 100),
+          size: 20,
+          color: "red",
+          dx: (Math.random() - 0.5) * 3,
+          dy: (Math.random() - 0.5) * 3,
+        });
+      }
+      for (let i = 0; i < 3 + level; i++) {
+        positiveItems.push({
+          x: Math.random() * (canvas.width - 20),
+          y: Math.random() * (canvas.height - 20),
+          size: 15,
+          color: "lime",
+        });
+      }
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+    }
+
+    function drawItems() {
+      stressItems.forEach((s) => {
+        ctx.fillStyle = s.color;
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+      });
+      positiveItems.forEach((p) => {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function movePlayer() {
+      player.x += player.dx;
+      player.y += player.dy;
+      if (player.x < 0) player.x = 0;
+      if (player.y < 0) player.y = 0;
+      if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+      if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
+    }
+
+    function moveStress() {
+      stressItems.forEach((s) => {
+        s.x += s.dx;
+        s.y += s.dy;
+        if (s.x <= 0 || s.x + s.size >= canvas.width) s.dx *= -1;
+        if (s.y <= 0 || s.y + s.size >= canvas.height) s.dy *= -1;
+      });
+    }
+
+    function detectCollisions() {
+      // Stress chạm => thua
+      for (let s of stressItems) {
+        if (
+          player.x < s.x + s.size &&
+          player.x + player.size > s.x &&
+          player.y < s.y + s.size &&
+          player.y + player.size > s.y
+        ) {
+          gameOver();
+          return;
+        }
+      }
+
+      // Ăn vật phẩm tích cực
+      for (let i = 0; i < positiveItems.length; i++) {
+        const p = positiveItems[i];
+        if (
+          player.x < p.x + p.size &&
+          player.x + player.size > p.x &&
+          player.y < p.y + p.size &&
+          player.y + player.size > p.y
+        ) {
+          score += 10;
+          collectSound.currentTime = 0;
+          collectSound.play();
+          positiveItems.splice(i, 1);
+          scoreEl.textContent = score;
+        }
+      }
+
+      // Hết vật phẩm => qua màn
+      if (positiveItems.length === 0) {
+        fadeOutAndNextLevel();
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = fadeOpacity;
+      drawPlayer();
+      drawItems();
+      ctx.globalAlpha = 1;
+    }
+
+    function update() {
+      if (!gameActive) return;
+      movePlayer();
+      moveStress();
+      detectCollisions();
+      draw();
+      requestAnimationFrame(update);
+    }
+
+    function fadeOutAndNextLevel() {
+      gameActive = false;
+      let fade = setInterval(() => {
+        fadeOpacity -= 0.05;
+        canvas.style.opacity = fadeOpacity;
+        if (fadeOpacity <= 0) {
+          clearInterval(fade);
+          nextLevel();
+          fadeOpacity = 1;
+          canvas.style.opacity = 1;
+        }
+      }, 50);
+    }
+
+    function nextLevel() {
+      level++;
+      if (level > 5) {
+        gameActive = false;
+        bgMusic.pause();
+        alert("🎉 Bạn đã cân bằng được giữa tích cực và tiêu cực trong xã hội! 🎉");
+        restartBtn.style.display = "inline-block";
+        return;
+      }
+      levelEl.textContent = level;
+      createItems();
+      gameActive = true;
+      update();
+    }
+
+    function gameOver() {
+      gameActive = false;
+      bgMusic.pause();
+      gameOverSound.play();
+      alert("😢 Game Over — Bạn bị cuốn vào stress xã hội!");
+      restartBtn.style.display = "inline-block";
+    }
+
+    // --- Controls ---
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" || e.key === "w") player.dy = -player.speed;
+      if (e.key === "ArrowDown" || e.key === "s") player.dy = player.speed;
+      if (e.key === "ArrowLeft" || e.key === "a") player.dx = -player.speed;
+      if (e.key === "ArrowRight" || e.key === "d") player.dx = player.speed;
+    });
+    document.addEventListener("keyup", (e) => {
+      if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) player.dy = 0;
+      if (["ArrowLeft", "ArrowRight", "a", "d"].includes(e.key)) player.dx = 0;
+    });
+
+    restartBtn.addEventListener("click", () => {
+      score = 0;
+      level = 1;
+      scoreEl.textContent = score;
+      levelEl.textContent = level;
+      player.x = 50;
+      player.y = 350;
+      fadeOpacity = 1;
+      canvas.style.opacity = 1;
+      bgMusic.currentTime = 0;
+      bgMusic.play();
+      gameActive = true;
+      restartBtn.style.display = "none";
+      createItems();
+      update();
+    });
+
+    // --- Start game ---
+    createItems();
+    bgMusic.play();
+    update();
+  </script>
+</body>
+</html>

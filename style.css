@@ -1,0 +1,42 @@
+body {
+  margin: 0;
+  background: #222;
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+}
+
+.screen {
+  display: none;
+  padding: 20px;
+}
+
+.screen.active {
+  display: block;
+}
+
+button {
+  padding: 12px 24px;
+  margin: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #4caf50;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #66bb6a;
+}
+
+#choices {
+  margin-top: 20px;
+}
+
+canvas {
+  border: 3px solid #fff;
+  border-radius: 12px;
+  background: #333;
+}
