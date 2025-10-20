@@ -47,13 +47,6 @@ This game is part of the **Vibe Coding - Play to Impact Challenge**, highlightin
 
 ---
 
-## 🧑‍💻 Team & Roles
-
-| Member | Role | Responsibility |
-|---------|------|----------------|
-| CrisDevil222 | Developer | Code, design, and game logic |
-| ChatGPT | AI Assistant | Idea generation, prompts, code generation |
-| Gemini & Leonardo | AI Support | Visual and art generation |
 
 ---
 
